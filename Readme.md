@@ -1,3 +1,4 @@
+In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com/net-core-series/) to learn .NET.
 
 ## Chapter 1: 
 
