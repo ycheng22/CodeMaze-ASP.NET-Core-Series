@@ -1,3 +1,7 @@
 .vs
 CompanyEmployees/obj/*
 CompanyEmployees/bin/*
+Contracts/obj/*
+Contracts/bin/*
+LoggerService/obj/*
+LoggerService/bin/*
