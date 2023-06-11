@@ -52,4 +52,7 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
 - Deleting a record
 - Deleting a parent resource with its children
 
+## Chapter 11: Working with PUT Request
 
+- Updating a record
+- Inserting children resources with parent
