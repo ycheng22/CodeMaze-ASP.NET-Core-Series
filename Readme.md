@@ -85,7 +85,7 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
 
 - Model State, Rerun validation, `ModelState.ClearValidationState(), TryValidateModel(), UnprocessableEntity()`
 - The most used built-in attributes: 
-  ![](./img/built_in_validation.PNG)
+  ![](./img/built_in_validation.png)
   [Complete list](https://learn.microsoft.com/en-us/dotnet/api/system.componentmodel.dataannotations?view=net-5.0)
 - Creating custom attribute with `ValidationAttribute, IValidatableObject`
 - Adding annotation in Dto to apply built-in validation, `Required, MaxLength, Range`
@@ -109,3 +109,16 @@ use void only for the asynchronous event handlers which require
 a void return type. Other than that, we should always return a Task
 - Refactoring repository, service, controller to asychronous
 
+## Chapter 15: Action Filters
+
+- There are different filter types
+  - **Authorization filters** – They run first to determine whether a user
+is authorized for the current request
+  - **Resource filters** – They run right after the authorization filters and
+are very useful for caching and performance
+  - **Action filters** – They run right before and after action method
+execution
+  - **Exception filters** – They are used to handle exceptions before the
+response body is populated
+  - **Result filters** – They run before and after the execution of the
+action methods result
