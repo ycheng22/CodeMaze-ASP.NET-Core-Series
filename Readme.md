@@ -37,6 +37,7 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
 - Using POST method to create resources, CreatedAtRoute method
 - [ApiController] attribute's behaviors
 - To enable custom response, add 
+  
   ` builder.Services.Configure<ApiBehaviorOptions>(options =>
     {
         options.SuppressModelStateInvalidFilter = true;
@@ -48,6 +49,7 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
  
 ## Chapter 10: Working with DELETE Request
 
-- 
+- Deleting a record
+- Deleting a parent resource with its children
 
 
