@@ -90,3 +90,17 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
 - Creating custom attribute with `ValidationAttribute, IValidatableObject`
 - Adding annotation in Dto to apply built-in validation, `Required, MaxLength, Range`
 
+## Chapter 14: Asynchronous Code
+
+- `async` keywoard is to enable the `await` within the method
+- `await` performs an asynchronous wait on its argument. If a method needs time to finish, the `await` keyword will pause the method execution and return an incomplete task.
+- `Task` represents an execution of the asynchronous method and not the result. The `Task` has several properties that indicate whether the operation was completed successfully or not (`Status, IsCompleted, IsCanceled, IsFaulted`). With these
+properties, we can track the flow of our async operations. This is also called TAP (Task-based Asynchronous Pattern).
+- In asynchronous programming, we have three return tyeps:
+  - `Task<TResult>`, for an async method that returns a value
+  - `Task`, for an async method that does not return a value
+  - `void`, which we can use for an event handler. We should
+use void only for the asynchronous event handlers which require
+a void return type. Other than that, we should always return a Task
+- Refactoring repository, service, controller to asychronous
+
