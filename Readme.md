@@ -93,7 +93,12 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
 ## Chapter 14: Asynchronous Code
 
 - `async` keywoard is to enable the `await` within the method
-- `await` performs an asynchronous wait on its argument. If a method needs time to finish, the `await` keyword will pause the method execution and return an incomplete task.
+- `await` performs an asynchronous wait on its argument. If a method needs time to finish, the `await` keyword will pause the method execution and return an incomplete task. The `await` keyword does three things:
+  - It helps us extract the result from the async operation – we already
+learned about that
+  - Validates the success of the operation
+  - Provides the Continuation for executing the rest of the code in the
+async method
 - `Task` represents an execution of the asynchronous method and not the result. The `Task` has several properties that indicate whether the operation was completed successfully or not (`Status, IsCompleted, IsCanceled, IsFaulted`). With these
 properties, we can track the flow of our async operations. This is also called TAP (Task-based Asynchronous Pattern).
 - In asynchronous programming, we have three return tyeps:
