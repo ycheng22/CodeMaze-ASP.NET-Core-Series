@@ -80,4 +80,13 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
   ![](./img/PATCH.PNG)
 - Configuring support for json patch using Newtonsoft.Json while leaving the other formatters unchanged
 - With ReverseMap(), we can use map in reverse way. `CreateMap<EmployeeForUpdateDto, Employee>().ReverseMap()`
-- 
+
+## Chapter 13: Validation
+
+- Model State, Rerun validation, `ModelState.ClearValidationState(), TryValidateModel(), UnprocessableEntity()`
+- The most used built-in attributes: 
+  ![](./img/built_in_validation.PNG)
+  [Complete list](https://learn.microsoft.com/en-us/dotnet/api/system.componentmodel.dataannotations?view=net-5.0)
+- Creating custom attribute with `ValidationAttribute, IValidatableObject`
+- Adding annotation in Dto to apply built-in validation, `Required, MaxLength, Range`
+
