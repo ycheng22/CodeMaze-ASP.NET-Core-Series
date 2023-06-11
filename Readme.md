@@ -18,9 +18,14 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
 - If the return is null, throw CompanyNotFoundException
 - Repeat for Employee repository, service, controller
 
-## Chapter 7: 
+## Chapter 7: Content Negotiation
+- The default return format is json
+- Add RespectBrowserAcceptHeader to allow content negotiation, return xml
+- Add  ReturnHttpNotAcceptable to return 406 when reqeust media type is not available
+- Implementing customer formatter: CsvOutputFormatter, register to service extension, Program
 
-## Chapter 8: 
+## Chapter 8: Method Safety and Method Idempotency
+
 
 ## Chapter 9: 
 
