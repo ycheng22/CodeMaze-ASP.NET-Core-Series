@@ -56,3 +56,28 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
 
 - Updating a record
 - Inserting children resources with parent
+
+## Chapter 12: Working with PATCH Reqeust
+
+- PATCH updates a record partially, PUT updates the whole record
+- PATCH: [FromBody]JsonPatchDocument<Company>, PUT: [FromBody]Company
+- PATCH request's media type: application/json-patch+json, PATCH request's media type: application/json
+- PATCH request body: 
+  ```
+  [
+    {
+    "op": "replace",
+    "path": "/name",
+    "value": "new name"
+    },
+    {
+    "op": "remove",
+    "path": "/name"
+    }
+  ]
+  ```
+- There are six different operations for a PATCH request:
+  ![](./img/PATCH.PNG)
+- Configuring support for json patch using Newtonsoft.Json while leaving the other formatters unchanged
+- With ReverseMap(), we can use map in reverse way. `CreateMap<EmployeeForUpdateDto, Employee>().ReverseMap()`
+- 
