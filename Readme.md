@@ -301,3 +301,29 @@ var employees = await FindByCondition(e => e.CompanyId.Equals(companyId)
 
 ## Chapter 18: Searching
 
+``` c#
+var employees = await FindByCondition(e => e.CompanyId.Equals(companyId), trackChanges)
+                .FilterEmployees(employeeParameters.MinAge, employeeParameters.MaxAge)
+                .Search(employeeParameters.SearchTerm)
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+```
+``` c#
+public static class RepositoryEmployeeExtensions
+  {
+      public static IQueryable<Employee> FilterEmployees(this IQueryable<Employee> employees,
+          uint minAge, uint maxAge) =>
+          employees.Where(e => e.Age >= minAge && e.Age <= maxAge);
+
+      public static IQueryable<Employee> Search(this IQueryable<Employee> employees, string searchTerm)
+      {
+          if (string.IsNullOrWhiteSpace(searchTerm))
+              return employees;
+
+          var lowerCaseTerm = searchTerm.Trim().ToLower();
+
+          return employees.Where(e => e.Name.ToLower().Contains(lowerCaseTerm));
+      }
+  }
+```
+
