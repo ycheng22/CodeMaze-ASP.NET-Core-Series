@@ -281,4 +281,23 @@ action method execution:
   ```
 - Implementing in repository, service, controller
 
+## Chapter 17: Filtering
+
+``` c#
+public class EmployeeParameters : RequestParameters
+    {
+        public uint MinAge { get; set; }
+        public uint MaxAge { get; set; } = int.MaxValue;
+        public bool ValidAgeRange => MaxAge > MinAge;
+    }
+```
+``` c#
+var employees = await FindByCondition(e => e.CompanyId.Equals(companyId)
+          && (e.Age >= employeeParameters.MinAge && 
+          e.Age <= employeeParameters.MaxAge), trackChanges)
+          .OrderBy(e => e.Name)
+          .ToListAsync();
+```
+
+## Chapter 18: Searching
 
