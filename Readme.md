@@ -217,3 +217,68 @@ action method execution:
     }
     ```
 
+## Chapter 16: Paging
+
+- Pageing means getting partial results from an API
+  ``` c#
+  public abstract class RequestParameters
+      {
+          const int maxPageSize = 50;
+          public int PageNumber { get; set; } = 1;
+
+          private int _pageSize = 10;
+          public int PageSize 
+          { 
+              get 
+              { 
+                  return _pageSize;
+              }
+              set
+              {
+                  _pageSize = (value > maxPageSize) ? maxPageSize : value;
+              }
+          }
+      }
+  ```
+- PagedList will inherit from the List class, we can also move the skip/take logic to the PagedList:
+  ``` c#
+  public class MetaData
+  {
+		public int CurrentPage { get; set; }
+		public int TotalPages { get; set; }
+		public int PageSize { get; set; }
+		public int TotalCount { get; set; }
+
+		public bool HasPrevious => CurrentPage > 1;
+		public bool HasNext => CurrentPage < TotalPages;
+	}
+  ```
+  ``` c#
+  public class PagedList<T> : List<T>
+  {
+    public MetaData MetaData { get; set; }
+    public PagedList(List<T> items, int count, int pageNumber, int pageSize)
+    {
+        MetaData = new MetaData
+        {
+            TotalCount = count,
+            PageSize = pageSize,
+            CurrentPage = pageNumber,
+            TotalPages = (int)Math.Ceiling(count / (double)pageSize),
+        };
+
+        AddRange(items);
+    }
+
+    public static PagedList<T> ToPagedList(IEnumerable<T> source, int pageNumber, int pageSize)
+    {
+        var count = source.Count();
+        var items = source.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
+        return new PagedList<T>(items, count, pageNumber, pageSize);
+    }
+  }
+  ```
+- Implementing in repository, service, controller
+
+
