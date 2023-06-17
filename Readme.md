@@ -376,3 +376,11 @@ public static IQueryable<Employee> Sort(this IQueryable<Employee> employees, str
 }
 ```
 
+## Chapter 20: Data Shaping
+
+- Data shaping is a great way to reduce the amount of traffic sent from the API to the client. It enables the consumer of the API to select (shape) the data by choosing the fields through the query string. For example: https://localhost:5001/api/companies/companyId/employees?fields=name,age
+- DataShaper, ExpandoObject, XML
+
+
+
+
