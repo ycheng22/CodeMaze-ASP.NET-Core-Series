@@ -63,7 +63,7 @@ In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com
 - PATCH: [FromBody]JsonPatchDocument<Company>, PUT: [FromBody]Company
 - PATCH request's media type: application/json-patch+json, PATCH request's media type: application/json
 - PATCH request body: 
-  ```
+  ``` json
   [
     {
     "op": "replace",
@@ -122,3 +122,98 @@ execution
 response body is populated
   - **Result filters** – They run before and after the execution of the
 action methods result
+- Synchronous Action filter that runs before and after
+action method execution:
+  ``` c#
+  namespace ActionFilters.Filters
+  {
+    public class ActionFilterExample : IActionFilter
+    {
+      public void OnActionExecuting(ActionExecutingContext context)
+      {
+      // our code before action executes
+      }
+      public void OnActionExecuted(ActionExecutedContext context)
+      {
+      // our code after action executes
+      }
+    }
+  }
+  ```
+- Asynchronous filter, we only have one method to implement the OnActionExecutionAsync.
+  ``` c#
+  namespace ActionFilters.Filters
+  {
+    public class AsyncActionFilterExample : IAsyncActionFilter
+    {
+      public async Task OnActionExecutionAsync(ActionExecutingContext context,
+      ActionExecutionDelegate next)
+      {
+      // execute any code before the action executes
+      var result = await next();
+      // execute any code after the action executes
+      }
+    }
+  }
+  ```
+- The action filter can be added to different scope levels: Global, Action, and Controller
+  - If we want to use our filter globally, we need to register it inside the AddControllers() method in the Program class
+    ``` c#
+    builder.Services.AddControllers(config =>
+    {
+    config.Filters.Add(new GlobalFilterExample());
+    });
+    ```
+  - On the Action or Controller level, we need to register it, but as a service in the IoC container:
+    ``` c#
+    builder.Services.AddScoped<ActionFilterExample>();
+    builder.Services.AddScoped<ControllerFilterExample>();
+    ```
+  - To use a filter registered on the Action or Controller level, we need to place it on top of the Controller or Action as a ServiceType:
+    ``` c#
+    namespace AspNetCore.Controllers
+    {
+      [ServiceFilter(typeof(ControllerFilterExample))]
+      [Route("api/[controller]")]
+      [ApiController]
+      public class TestController : ControllerBase
+      {
+        [HttpGet]
+        [ServiceFilter(typeof(ActionFilterExample))]
+        public IEnumerable<string> Get()
+        {
+          return new string[] { "example", "data" };
+        }
+      }
+    }
+    ```
+- The order in which our filters are executed is as follows:
+  ![](.img/../img/ActionFilterOrder.png)
+  - we can change the order of invocation by adding the Order property to the invocation statement:
+    ``` c#
+    namespace AspNetCore.Controllers
+    {
+      [ServiceFilter(typeof(ControllerFilterExample), Order = 2)]
+      [Route("api/[controller]")]
+      [ApiController]
+      public class TestController : ControllerBase
+      {
+        [HttpGet]
+        [ServiceFilter(typeof(ActionFilterExample), Order = 1)]
+        public IEnumerable<string> Get()
+        {
+          return new string[] { "example", "data" };
+        }
+      }
+    }
+    ```
+    ``` c#
+    [HttpGet]
+    [ServiceFilter(typeof(ActionFilterExample), Order = 2)]
+    [ServiceFilter(typeof(ActionFilterExample2), Order = 1)]
+    public IEnumerable<string> Get()
+    {
+      return new string[] { "example", "data" };
+    }
+    ```
+
