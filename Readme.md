@@ -1089,3 +1089,104 @@ typed objects. To do that, we can use the Bind method.
   - Values are cached and reloaded immediately
   - Supports named options
   
+## Chapter 30: Documenting API with Swagger
+
+- There are three main components in the `Swashbuckle` package:
+  - `Swashbuckle.AspNetCore.Swagger`: This contains the Swagger object model and the middleware to expose SwaggerDocument objects as JSON.
+  - `Swashbuckle.AspNetCore.SwaggerGen`: A Swagger generator that builds SwaggerDocument objects directly from our routes, controllers, and models.
+  - `Swashbuckle.AspNetCore.SwaggerUI`: An embedded version of the Swagger UI tool. It interprets Swagger JSON to build a rich, customizable experience for describing web API functionality.
+- `Install-Package Swashbuckle.AspNetCore`
+- ConfigureSwagger()
+  ```c#
+  public static void ConfigureSwagger(this IServiceCollection services)
+  {
+      services.AddSwaggerGen(s =>
+      {
+          s.SwaggerDoc("v1", new OpenApiInfo { Title = "Code Maze API", Version = "v1" });
+          s.SwaggerDoc("v2", new OpenApiInfo { Title = "Code Maze API", Version = "v2" });
+      });
+  }
+  ```
+  ```c#
+  builder.Services.ConfigureSwagger();
+  ```
+  ```c#
+  app.UseSwagger();
+  app.UseSwaggerUI(s =>
+  {
+      s.SwaggerEndpoint("/swagger/v1/swagger.json", "Code Maze API v1");
+      s.SwaggerEndpoint("/swagger/v2/swagger.json", "Code Maze API v2");
+  });
+  ```
+  Adding `[ApiExplorerSettings(GroupName = "v1")]` above CompaniesController, `[ApiExplorerSettings(GroupName = "v2")]` above CompaniesV2Controller. All the other controllers will be included in both groups because they are not versioned.
+- https://localhost:5001/swagger/index.html
+- Adding authorization support: 
+  ```c#
+  s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+  {
+      In = ParameterLocation.Header,
+      Description = "Place to add JWT with Bearer",
+      Name = "Authorization",
+      Type = SecuritySchemeType.ApiKey,
+      Scheme = "Bearer"
+  });
+
+  s.AddSecurityRequirement(new OpenApiSecurityRequirement()
+  {
+      {
+          new OpenApiSecurityScheme
+          {
+              Reference = new OpenApiReference
+              {
+                  Type = ReferenceType.SecurityScheme,
+                  Id = "Bearer"
+              },
+              Name = "Bearer",
+          },
+          new List<string>()
+      }
+  });
+  ```
+- Adding information: 
+  ```c#
+  s.SwaggerDoc("v1", new OpenApiInfo 
+  { 
+      Title = "Code Maze API", 
+      Version = "v1",
+      Description = "CompanyEmployees API by CodeMaze",
+      TermsOfService = new Uri("https://example.com/terms"),
+      Contact = new OpenApiContact
+      { 
+          Name = "John Doe",
+          Email = "John.Doe@gmail.com",
+          Url = new Uri("https://twitter.com/johndoe"),
+      },
+      License = new OpenApiLicense
+      {
+          Name = "CompanyEmployees API LICX",
+          Url = new Uri("https://example.com/license"),
+      }
+  });
+  ```
+- xml comments:
+  ```c#
+  var xmlFile = $"{typeof(Presentation.AssemblyReference).Assembly.GetName().Name}.xml";
+  var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+  s.IncludeXmlComments(xmlPath);
+  ```
+  Adding the following to CreateCompany:
+  ```xml
+  /// <summary>
+  /// Creates a newly created company
+  /// </summary>
+  /// <param name="company"></param>
+  /// <returns>A newly created company</returns>
+  /// <response code="201">Returns the newly created item</response>
+  /// <response code="400">If the item is null</response>
+  /// <response code="422">If the model is invalid</response>
+  [HttpPost(Name = "CreateCompany")]
+  [ProducesResponseType(201)]
+  [ProducesResponseType(400)]
+  [ProducesResponseType(422)]
+  [ServiceFilter(typeof(ValidationFilterAttribute))]
+  ```
