@@ -680,3 +680,242 @@ level configuration.
   ```c#
   app.UseIpRateLimiting();
   ```
+
+## Chapter 27: JWT, Identity, and Refresh Token
+
+- Implementing Identity with package `Microsoft.AspNetCore.Identity.EntityFrameworkCore`.
+  ```c#
+  public class User : IdentityUser
+    {
+        public string FirstName { get; set; }
+        public string LastName {  get; set; }
+    }
+  ```
+  Our class now inherits from the IdentityDbContext class and not DbContext because we want to integrate our context with Identity.
+  ```c#
+  public class RepositoryContext : IdentityDbContext<User>
+    {
+        public RepositoryContext(DbContextOptions options) : base(options)
+        {
+        }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.ApplyConfiguration(new CompanyConfiguration());
+            modelBuilder.ApplyConfiguration(new EmployeeConfiguration());
+        }
+
+        public DbSet<Company>? Companies { get; set; }
+        public DbSet<Employee>? Employees { get; set; }
+    }
+  ```
+  ```c#
+  public static void ConfigureIdentity(this IServiceCollection services)
+  {
+      var builder = services.AddIdentity<User, IdentityRole>(o =>
+      {
+          o.Password.RequireDigit = true;
+          o.Password.RequireLowercase = false;
+          o.Password.RequireUppercase = false;
+          o.Password.RequireNonAlphanumeric = false;
+          o.Password.RequiredLength = 10;
+          o.User.RequireUniqueEmail = true;
+      })
+      .AddEntityFrameworkStores<RepositoryContext>()
+      .AddDefaultTokenProviders();
+  }
+  ```
+  ```c#
+  builder.Services.AddAuthentication();
+  builder.Services.ConfigureIdentity();
+  ```
+  ```c#
+  app.UseAuthentication();
+  ```
+- Add-Migration CreatingIdentityTables, Update-Database
+- RoleConfiguration
+  ```c#
+  public class RoleConfiguration : IEntityTypeConfiguration<IdentityRole>
+  {
+      public void Configure(EntityTypeBuilder<IdentityRole> builder)
+      {
+          builder.HasData(
+              new IdentityRole
+              {
+                  Name = "Manager",
+                  NormalizedName = "MANAGER"
+              },
+              new IdentityRole
+              {
+                  Name = "Administrator",
+                  NormalizedName = "ADMINISTRATOR"
+              }
+          );
+      }
+  }
+  ```
+- AuthenticationController
+  ```c#
+  [Route("api/authentication")]
+  [ApiController]
+  public class AuthenticationController : ControllerBase
+  {
+      private readonly IServiceManager _service;
+
+      public AuthenticationController(IServiceManager service) => _service = service;
+
+      [HttpPost]
+      [ServiceFilter(typeof(ValidationFilterAttribute))]
+      public async Task<IActionResult> RegisterUser([FromBody] UserForRegistrationDto userForRegistration)
+      {
+          var result = await _service.AuthenticationService.RegisterUser(userForRegistration);
+          if (!result.Succeeded)
+          {
+              foreach(var error in result.Errors)
+              {
+                  ModelState.TryAddModelError(error.Code, error.Description);
+              }
+              return BadRequest(ModelState);
+          }
+
+          return StatusCode(201);
+      }
+  }
+  ```
+- JWT configuration
+  - appsettings.json
+    ```json
+    "JwtSettings": {
+      "validIssuer": "CodeMazeAPI",
+      "validAudience":  "https://localhost:5001",
+      "expires":  5
+    },
+    ```
+    - Creating an environment variable: `setx SECRET "CodeMazeSecretKey" /M`
+    - ConfigureJWT() 
+    ```c#
+    public static void ConfigureJWT(this IServiceCollection services, IConfiguration configuration)
+    {
+        var jwtSettings = configuration.GetSection("JwtSettings");
+        var secretKey = Environment.GetEnvironmentVariable("SECRET");
+
+        services.AddAuthentication(opt =>
+        {
+            opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+
+                ValidIssuer = jwtSettings["validIssuer"],
+                ValidAudience = jwtSettings["validAudience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+            };
+        });
+    }
+    ```
+    ```c#
+    builder.Services.ConfigureJWT(builder.Configuration);
+    ```
+- Adding `[Authorize]` above GetCompanies action, calling this api will receive 401
+- Implimenting authentication
+  ```c#
+  public record UserForAuthenticationDto
+  {
+      [Required(ErrorMessage = "User name is required")]
+      public string? UserName { get; init; }
+      [Required(ErrorMessage = "Password name is required")]
+      public string? Password { get; init; }
+  }
+  ```
+  ```c#
+  public interface IAuthenticationService
+  {
+      Task<IdentityResult> RegisterUser(UserForRegistrationDto userForRegistration);
+      Task<bool> ValidateUser(UserForAuthenticationDto userForAuth);
+      Task<string> CreateToken();
+  }
+  ```
+  ```c#
+  public async Task<bool> ValidateUser(UserForAuthenticationDto userForAuth)
+  {
+      _user = await _userManager.FindByNameAsync(userForAuth.UserName);
+
+      var result = (_user != null && await _userManager.CheckPasswordAsync(_user, userForAuth.Password));
+      if (!result)
+          _logger.LogWarn($"{nameof(ValidateUser)}: Authentication failed. Wrong user name or password.");
+
+      return result;
+  }
+
+  public async Task<string> CreateToken()
+  {
+      var signingCredentials = GetSigningCredentials();
+      var claims = await GetClaims();
+      var tokenOptions = GenerateTokenOptions(signingCredentials, claims);
+
+      return new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+  }
+
+  private SigningCredentials GetSigningCredentials()
+  {
+      var key = Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("SECRET");
+      var secret = new SymmetricSecurityKey(key);
+
+      return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
+  }
+
+  private async Task<List<Claim>> GetClaims()
+  {
+      var claims = new List<Claim>
+      {
+          new Claim(ClaimTypes.Name, _user.UserName)
+      };
+
+      var roles = await _userManager.GetRolesAsync(_user);
+      foreach(var role in roles)
+      {
+          claims.Add(new Claim(ClaimTypes.Role, role));
+      }
+
+      return claims;
+  }
+
+  private JwtSecurityToken GenerateTokenOptions(SigningCredentials signingCredentials,
+      List<Claim> claims)
+  {
+      var jwtSettings = _configuration.GetSection("jwtSettings");
+
+      var tokenOptions = new JwtSecurityToken
+      (
+          issuer: jwtSettings["validIssuer"],
+          audience: jwtSettings["validAudience"],
+          claims: claims,
+          expires: DateTime.Now.AddMinutes(Convert.ToDouble(jwtSettings["expires"])),
+          signingCredentials: signingCredentials
+      );
+
+      return tokenOptions;
+  }
+  ```
+  ```c#
+  [HttpPost("login")]
+  [ServiceFilter(typeof(ValidationFilterAttribute))]
+  public async Task<IActionResult> Authenticate([FromBody] UserForAuthenticationDto user)
+  {
+      if (!await _service.AuthenticationService.ValidateUser(user))
+          return Unauthorized();
+
+      return Ok(new { Token = await _service.AuthenticationService.CreateToken() });
+  }
+  ```
+- Role-based authorization：adding `[Authorize]` or `[Authorize(Roles = "...")]` on controller level or action level, we can control the authorization requirement for controllers and actions
+  
