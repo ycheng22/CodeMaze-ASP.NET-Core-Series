@@ -1040,3 +1040,52 @@ level configuration.
   }
   ```
 
+## Chapter 29: Binding Configuration and Options Pattern
+
+- In previos chapter, we fetch value from appsettings.json. We can bind the configuration data to strongly
+typed objects. To do that, we can use the Bind method.
+  ```c#
+  public class JwtConfiguration
+  {
+      public string Section { get; set; } = "JwtSettings";
+      public string? ValidIssuer { get; set; }
+      public string? ValidAudience { get; set; }
+      public string? Expires { get; set; }
+  }
+  ```
+  Replacing `var jwtSettings = configuration.GetSection("JwtSettings");` with
+  ```c#
+  var jwtConfiguration = new JwtConfiguration();
+  configuration.Bind(jwtConfiguration.Section, jwtConfiguration);
+  ```
+  Replacing `jwtSettings["validIssuer"]` with `_jwtConfiguration.ValidIssuer`
+- Options pattern
+  ```c#
+  public static void AddJwtConfiguration(this IServiceCollection services, IConfiguration configuration) =>
+        services.Configure<JwtConfiguration>(configuration.GetSection("JwtSettings"));
+  ```
+  ```c#
+  builder.Services.AddJwtConfiguration(builder.Configuration);
+  ```
+  Replace `IConfiguration configuration` with `IOptions<JwtConfiguration> configuration`
+- Using `IOptionSnapshot` or `IOptionMonitor` if we don't want to restart system after modifying variable.
+  The main **difference** between these two interfaces is that the IOptionsSnapshot service is registered as a scoped service and thus can’t be injected inside the singleton service. On the other hand, IOptionsMonitor is registered as a singleton service and can be injected into any service lifetime.
+- **IOptions<T>**:
+  - Is the original Options interface and it’s better than binding the whole Configuration
+  - Does not support configuration reloading
+  - Is registered as a singleton service and can be injected anywhere
+  - Binds the configuration values only once at the registration, and returns the same values every time
+  - Does not support named options
+- **IOptionsSnapshot<T>**:
+  - Registered as a scoped service
+  - Supports configuration reloading
+  - Cannot be injected into singleton services
+  - Values reload per request
+  - Supports named options
+- **IOptionsMonitor<T>**:
+  - Registered as a singleton service
+  - Supports configuration reloading
+  - Can be injected into any service lifetime
+  - Values are cached and reloaded immediately
+  - Supports named options
+  
