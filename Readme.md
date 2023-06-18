@@ -478,4 +478,19 @@ public static IQueryable<Employee> Sort(this IQueryable<Employee> employees, str
   - hateoas – media type name
   - json – suffix; we can use it to describe if we want json or an XML response
 
+## Chapter 22: Working with OPTIONS and HEAD Requests
+
+- The Options request can be used to request information on the communication options available upon a certain URI. Basically, Options should inform us whether we can Get a resource or execute any other action (POST, PUT, or DELETE). All of the options should be returned in the Allow header of the response as a commaseparated list of methods.
+``` c#
+[HttpOptions]
+public IActionResult GetCompaniesOptions()
+{
+    Response.Headers.Add("Allow", "GET, OPTIONS, POST");
+
+    return Ok();
+}
+```
+- The Head is identical to Get but without a response body. This type of request could be used to obtain information about validity, accessibility, and recent modifications of the resource. All we have to do is add the HttpHead attribute below HttpGet.
+  
+  
 
