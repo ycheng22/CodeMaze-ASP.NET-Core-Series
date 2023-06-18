@@ -919,3 +919,124 @@ level configuration.
   ```
 - Role-based authorization：adding `[Authorize]` or `[Authorize(Roles = "...")]` on controller level or action level, we can control the authorization requirement for controllers and actions
   
+## Chapter 28: Refresh Token
+
+- After the token expires, the user has to login again to obtain a new token. Instead of forcing our users to log in every single time the token expires. For that, we can use a refresh token. Refresh tokens are credentials that can be used to acquire new access tokens. The lifetime of a refresh token is usually set much longer compared to the lifetime of an access token.
+- Adding RefreshToken, RefreshTokenExpiryTime into User class. After Add-Migration, check the migration file, keep only the AddColumn code, go to RepositoryContextModelSnapshot, revert the id to previous id.
+  ```c#
+  namespace Shared.DataTransferObjects;
+  public record TokenDto(string AccessToken, string RefreshToken);
+  ```
+  ```c#
+  Task<TokenDto> CreateToken(bool populateExp);
+  ```
+  ```c#
+  public async Task<TokenDto> CreateToken(bool populateExp)
+  {
+      var signingCredentials = GetSigningCredentials();
+      var claims = await GetClaims();
+      var tokenOptions = GenerateTokenOptions(signingCredentials, claims);
+
+      var refreshToken = GenerateRefreshToken();
+      
+      _user.RefreshToken = refreshToken;
+
+      if (populateExp)
+          _user.RefreshTokenExpiryTime = DateTime.Now.AddDays(7);
+
+      await _userManager.UpdateAsync(_user);
+
+      var accessToken = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+
+      return new TokenDto(accessToken, refreshToken);
+  }
+
+  private string GenerateRefreshToken()
+  {
+      var randomNumber = new byte[32];
+      using (var rng = RandomNumberGenerator.Create())
+      {
+          rng.GetBytes(randomNumber);
+          return Convert.ToBase64String(randomNumber);
+      }
+  }
+
+  private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+  {
+      var jwtSettings = _configuration.GetSection("JwtSettings");
+
+      var tokenValidationParameters = new TokenValidationParameters
+      {
+          ValidateAudience = true,
+          ValidateIssuer = true,
+          ValidateIssuerSigningKey = true,
+          IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+              Environment.GetEnvironmentVariable("SECRET"))),
+          ValidateLifetime = true,
+          ValidIssuer = jwtSettings["validIssuer"],
+          ValidAudience = jwtSettings["validAudience"]
+      };
+
+      var tokenHandler = new JwtSecurityTokenHandler();
+      SecurityToken securityToken;
+      var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out securityToken);
+
+      var jwtSecurityToken = securityToken as JwtSecurityToken;
+      if (jwtSecurityToken == null || 
+          !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256,
+          StringComparison.InvariantCultureIgnoreCase))
+      {
+          throw new SecurityTokenException("Invalid token");
+      }
+
+      return principal;
+  }
+  ```
+  ```c#
+  [HttpPost("login")]
+  [ServiceFilter(typeof(ValidationFilterAttribute))]
+  public async Task<IActionResult> Authenticate([FromBody] UserForAuthenticationDto user)
+  {
+      if (!await _service.AuthenticationService.ValidateUser(user))
+          return Unauthorized();
+
+      var tokenDto = await _service.AuthenticationService.CreateToken(populateExp: true);
+
+      return Ok(tokenDto);
+  }
+  ```
+  ```c#
+  public async Task<TokenDto> RefreshToken(TokenDto tokenDto)
+  {
+      var principal = GetPrincipalFromExpiredToken(tokenDto.AccessToken);
+
+      var user = await _userManager.FindByNameAsync(principal.Identity.Name);
+      if (user == null || user.RefreshToken != tokenDto.RefreshToken ||
+          user.RefreshTokenExpiryTime <= DateTime.Now)
+          throw new RefreshTokenBadRequest();
+
+      _user = user;
+
+      return await CreateToken(populateExp: false);
+  }
+  ```
+  ```c#
+  [Route("api/token")]
+  [ApiController]
+  public class TokenController : ControllerBase
+  {
+      private readonly IServiceManager _service;
+
+      public TokenController(IServiceManager service) => _service = service;
+
+      [HttpPost("refresh")]
+      [ServiceFilter(typeof(ValidationFilterAttribute))]
+      public async Task<IActionResult> Refresh([FromBody]TokenDto tokenDto)
+      {
+          var tokenDtoToReturn = await _service.AuthenticationService.RefreshToken(tokenDto);
+
+          return Ok(tokenDtoToReturn);
+      }
+  }
+  ```
+
