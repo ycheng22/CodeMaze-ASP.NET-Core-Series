@@ -573,3 +573,71 @@ namespace CompanyEmployees.Presentation.Controllers
   opt.Conventions.Controller<CompaniesV2Controller>()
   .HasDeprecatedApiVersion(new ApiVersion(2, 0));
   ```
+
+## Chapter 25: Caching
+
+- There are three types of caches: 
+  - Client Cache: lives on the client (browser); thus, it is a private cache. It is private because it is related to a single client.
+  - Gateway Cache:  lives on the server and is a shared cache.
+  - Proxy Cache: is also a shared cache, but it doesn’t live on the server nor the client side. It lives on the network.
+- To cache some resources, we have to know whether or not it’s cacheable. The response header helps us with that. The one that is used most often is `Cache-Control: Cache-Control: max-age=180`.
+- `[ResponseCache(Duration = 60)]`
+- ConfigureResponseCaching()
+  ``` c#
+  public static void ConfigureResponseCaching(this IServiceCollection services) =>
+              services.AddResponseCaching();
+  ```
+  ``` c#
+  builder.Services.ConfigureResponseCaching();
+  ```
+  ``` c#
+  app.UseCors("CorsPolicy");
+  app.UseResponseCaching();
+  ```
+- `CacheProfiles`:
+  ``` c#
+  builder.Services.AddControllers(config => {
+    ...
+    config.CacheProfiles.Add("120SecondsDuration", new CacheProfile { Duration = 120});
+  })...
+  ```
+  Adding `[ResponseCache(CacheProfileName = "120SecondsDuration")]` on top of the Companies controller. This cache rule will apply to all the actions inside the controller except the ones that already have the ResponseCache attribute applied.
+- Validation Model: the value is caches, the second reqeust get value from cache store, but we don't know if the cased value is the latest value (someone could modified the value), so the cache server communicate with API server, if not modified, API server returns 304 Not Modified status, then the cached the value is served.
+  ![](./img/caching_validation.png)
+- Supporting Validation with package `Marvin.Cache.Headers`:
+  ``` c#
+  public static void ConfigureHttpCacheHeaders(this IServiceCollection services) => 
+  services.AddHttpCacheHeaders();
+  ```
+  ```c#
+  builder.Services.ConfigureHttpCacheHeaders();
+  ```
+  ```c#
+  app.UseHttpCacheHeaders();
+  ```
+- Configuring our expiration and validation headers globally.
+  ```c#
+  public static void ConfigureHttpCacheHeaders(this IServiceCollection services) =>
+      services.AddHttpCacheHeaders(
+          (expirationOpt) =>
+          {
+              expirationOpt.MaxAge = 65;
+              expirationOpt.CacheLocation = CacheLocation.Private;
+          },
+          (validationOpt) =>
+          {
+              validationOpt.MustRevalidate = true;
+          }
+          );
+  ```
+- Other than global configuration, we can apply it on the resource level (on action or controller). The overriding rules are the same. Configuration on the action level will override the configuration on the controller or global level. Also, the configuration on the controller level will override the global
+level configuration.
+- Configuring resource level configuration:
+  ```c#
+  [HttpCacheExpiration(CacheLocation = CacheLocation.Public, MaxAge = 60)]
+  [HttpCacheValidation(MustRevalidate = false)]
+  ```
+-  The `ResponseCaching` library doesn’t correctly implement the validation model, alternatives:
+   -  Varnish - https://varnish-cache.org/
+   -  Apache Traffic Server - https://trafficserver.apache.org/
+   -  Squid - http://www.squid-cache.org/
