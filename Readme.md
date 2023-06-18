@@ -641,3 +641,42 @@ level configuration.
    -  Varnish - https://varnish-cache.org/
    -  Apache Traffic Server - https://trafficserver.apache.org/
    -  Squid - http://www.squid-cache.org/
+
+
+## Chapter 26: Rate Limiting and Throttling
+
+- To provide information about rate limiting, we use the response headers. They are separated between Allowed requests, which all start with the XRate-Limit and Disallowed requests. The Allowed requests header contains the following information :
+  - X-Rate-Limit-Limit – rate limit period.
+  - X-Rate-Limit-Remaining – number of remaining requests.
+  - X-Rate-Limit-Reset – date/time information about resetting the request limit.
+  - 
+- For the disallowed requests, we use a 429 status code; that stands for too many requests.
+- Implementing rate limiting with package `AspNetCoreRateLimit`.
+  ```c#
+  public static void ConfigureRateLimitingOptions(this IServiceCollection services)
+  {
+      var rateLimitRules = new List<RateLimitRule>
+      {
+          new RateLimitRule
+          {
+              Endpoint = "*",
+              Limit = 3,
+              Period = "5m"
+          }
+      };
+
+      services.Configure<IpRateLimitOptions>(opt => { opt.GeneralRules = rateLimitRules; });
+      services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+      services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+      services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+      services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+  }
+  ```
+  ```c#
+  builder.Services.AddMemoryCache();
+  builder.Services.ConfigureRateLimitingOptions();
+  builder.Services.AddHttpContextAccessor();
+  ```
+  ```c#
+  app.UseIpRateLimiting();
+  ```
