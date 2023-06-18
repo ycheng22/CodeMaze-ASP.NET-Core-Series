@@ -1190,3 +1190,21 @@ typed objects. To do that, we can use the Bind method.
   [ProducesResponseType(422)]
   [ServiceFilter(typeof(ValidationFilterAttribute))]
   ```
+
+## Chapter 31: Deployment to IIS
+
+- Creating publish files: 
+  - Creating a folder: Publish
+  - Right click on the main project, select publish
+  - Select Folder, select the created folder
+  - Click Finish, Publish
+- Installing the [.NET Core Windows Server Hosting bundle](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-aspnetcore-6.0.0-windows-hosting-bundle-installer). Adding `127.0.0.1 www.companyemployees.codemaze` to the end of file: C:\Windows\System32\drivers\etc\hosts
+- IIS installation: 
+  - Control panel -> Turn Windows features o or off -> check Internet Information Services
+  - Win + R -> `inetmgr`
+  - <img src="./img/ch31_1.png" width=200 height=200>
+  - <img src="./img/ch31_2.png" width=400 height=500>
+  - <img src="./img/ch31_3.png" width=1200 height=350>
+  - Setting the .NET CLR version to No Managed Code is optional but recommended.
+- We have to provide to IIS the name of that key and the value.
+- 
