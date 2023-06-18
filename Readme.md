@@ -543,5 +543,33 @@ namespace CompanyEmployees.Presentation.Controllers
 }
 ```
 
+## Chapter 24: Versioning APIs
 
-
+- ConfigureVersioning() with packege `Microsoft.AspNetCore.Mvc.Versioning`:
+  ``` c#
+  public static void ConfigureVersioning(this IServiceCollection services)
+  {
+      services.AddApiVersioning(opt =>
+      {
+          opt.ReportApiVersions = true;
+          opt.AssumeDefaultVersionWhenUnspecified = true;
+          opt.DefaultApiVersion = new ApiVersion(1, 0);
+      });
+  }
+  ```
+- `[ApiVersion("2.0")]`, request in uri: https://localhost:5001/api/companies?api-version=2.0
+- Using URL versioning: 
+  ``` c#
+  [ApiVersion("2.0")]
+  [Route("api/{v:apiversion}/companies")]
+  ```
+  https://localhost:5001/api/2.0/companies
+- If we don’t want to change the URI of the API, we can send the version in the HTTP Header. `opt.ApiVersionReader = new HeaderApiVersionReader("api-version");`
+- If we want to deprecate version of an API, but don’t want to remove it completely, we can use the Deprecated property for that purpose: `[ApiVersion("2.0", Deprecated = true)]`
+- If we have a lot of versions of a single controller, we can assign these versions in the configuration instead. We can remove the `[ApiVersion]` attribute from the controllers.
+  ``` c#
+  opt.Conventions.Controller<CompaniesController>()
+  .HasApiVersion(new ApiVersion(1, 0));
+  opt.Conventions.Controller<CompaniesV2Controller>()
+  .HasDeprecatedApiVersion(new ApiVersion(2, 0));
+  ```
