@@ -1,12 +1,12 @@
 In this repo, I followed CodeMaze's [ASP.NET Core Series:](https://code-maze.com/net-core-series/) to learn .NET.
 
-## Chapter 1: 
+## Chapter 1: Project Configuration 
 
-## Chapter 2: 
+## Chapter 2: Configuring a Logging Service
 
-## Chapter 3: 
+## Chapter 3: Onion Arhictecture Implementation
 
-## Chapter 4: 
+## Chapter 4: Handling GET Requests
 
 ## Chapter 5: Global Error Handling
 
